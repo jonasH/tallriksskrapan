@@ -1,6 +1,17 @@
+# -*- coding: utf-8 -*-
 import requests
+import urllib.request
 from lxml import html
 
+week_number = 0
+
+def parse_vecka():
+    answer = requests.get('http://www.vecka.nu')
+    root = html.fromstring(answer.text)
+    for child in root.xpath('//time'):
+        global week_number
+        week_number = child.text
+    print('Det är nu vecka %s' % week_number)
 
 def parse_kompassen():
     print("### KOMPASSEN ###")
@@ -26,9 +37,23 @@ def parse_teknikparken():
             friday_found = True
 
 
+def parse_hemlingby():
+    print("### HEMLINGBY ###")
+    answer = requests.get('http://www.gavle.se/Uppleva--gora/Idrott-motion-och-friluftsliv/Friluftsliv-och-motion/Hemlingby-friluftsomrade/Hemlingbystugan/Fika-och-ata/')
+    root = html.fromstring(answer.text)
+    for child in root.xpath('//a'):
+        if child.text and "meny vecka" in child.text.lower() and week_number in child.text.lower():
+            print(child.text)
+            hemlingby_link='http://www.gavle.se' + child.get('href')
+            print(hemlingby_link)
+            break
+    urllib.request.urlretrieve(hemlingby_link, "hemlingby.pdf")
+    
 def main():
+    parse_vecka()
     parse_teknikparken()
     parse_kompassen()
-
+    parse_hemlingby()
+    
 if __name__ == '__main__':
     main()
