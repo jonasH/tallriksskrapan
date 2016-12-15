@@ -36,6 +36,14 @@ def parse_teknikparken():
         elif child.text and "fredag" in child.text.lower():
             friday_found = True
 
+def parse_gs():
+    print("### Gourmetservice ###")
+    answer = requests.get('http://www.geflegourmetservice.se/lunch.php')
+    root = html.fromstring(answer.text)
+
+    for child in root.xpath('//div[@class="left_holder"]/p')[1:3]:
+        print(child.text_content())
+
 
 def parse_hemlingby():
     print("### HEMLINGBY ###")
@@ -54,6 +62,7 @@ def main():
     parse_teknikparken()
     parse_kompassen()
     parse_hemlingby()
+    parse_gs()
     
 if __name__ == '__main__':
     main()
