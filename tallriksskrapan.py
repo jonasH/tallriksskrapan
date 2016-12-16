@@ -56,13 +56,34 @@ def parse_hemlingby():
             print(hemlingby_link)
             break
     urllib.request.urlretrieve(hemlingby_link, "hemlingby.pdf")
-    
+
+def parse_gustafsbro():
+    print("### Gustafsbro ###")
+    answer = requests.get('http://www.gavlelunch.se/gustafsbro.asp')
+    root = html.fromstring(answer.text)
+    friday_found = False
+
+    #Get friday from table
+    for weekdayTable in root.xpath('//body/font/table/tr[1]/td[1]/div/table'):
+        for day in weekdayTable.xpath('tr[1]/td[1]/font/strong'):
+            if day.text and "fredag" in day.text.lower():
+                friday_found = True
+                break
+
+    #If friday is found print food
+    if friday_found:
+           for food in weekdayTable.xpath('tr[2]/td[1]/font/ul/li'):
+               print(food.text)
+    else:
+           print("Oops something went wrong")
+
 def main():
     parse_vecka()
     parse_teknikparken()
     parse_kompassen()
     parse_hemlingby()
     parse_gs()
+    parse_gustafsbro()
     
 if __name__ == '__main__':
     main()
