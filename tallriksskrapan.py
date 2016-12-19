@@ -2,15 +2,16 @@
 import requests
 import urllib.request
 import io
-import warnings
 
 from lxml import html
 from pdfminer.pdfparser import PDFParser, PDFDocument
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LAParams, LTTextBox, LTTextLine
+from docx import Document
 
 week_number = 0
+lastWeek = "52" if week_number == "1" else str(int(week_number) - 1) 
 
 def parse_vecka():
     answer = requests.get('http://www.vecka.nu')
@@ -66,7 +67,6 @@ def parse_hemlingby():
     
 #Takes url to pdf file and returns text split on newline into array
 def parse_pdf(pdf_url):
-    warnings.filterwarnings('ignore', category=Warning, append=True)
 
     remote_file = urllib.request.urlopen(pdf_url).read()
     memory_file = io.BytesIO(remote_file)
@@ -80,9 +80,6 @@ def parse_pdf(pdf_url):
     laparams = LAParams()
     device = PDFPageAggregator(rsrcmgr, laparams=laparams)
     interpreter = PDFPageInterpreter(rsrcmgr, device)
-
-    warnings.resetwarnings()
-    warnings.filterwarnings('always', category=Warning, append=True)
 
     ret = []
     # Process each page contained in the document.
@@ -109,7 +106,7 @@ def getFoodFromPDFArray(pdfArray):
             elif correctWeek and "fredag" in line[0].lower():
 
                 #If the line is bigger than 1 it contains the food after 'fredag'
-                if len(line) > 1:
+                if line:
                     for x in range(1, len(line)):
                         ret += line[x] + "\n"
                 #The line only contained 'fredag' so the food is in the line after 'fredag'
@@ -141,6 +138,37 @@ def parse_gustafsbro():
     else:
            print("Oops something went wrong")
 
+def parse_sodersKalla():
+    print("### Söders källa ###")
+    url = ""
+    answer = requests.get('http://www.soderskalla.se/restaurangen/')
+    root = html.fromstring(answer.text)
+
+    #Get url for menu
+    for child in root.xpath('//a'):
+        if child.text and ("lunchmeny v" + week_number) in child.text.lower():
+            url = child.get('href')
+            break
+        #Check if menu has been updated from the week before, special case for first week of january
+        elif child.text and ("lunchmeny v" + lastWeek) in child.text.lower():
+             print("Menyn har ännu inte blivit uppdaterad")
+
+    #Fetch document
+    answer = requests.get(url)
+    memory_file = io.BytesIO(answer.content)
+    doc = Document(memory_file)
+
+    food = ""
+    #Parse document and look for fredag, food is in the next index
+    for idx, para in enumerate(doc.paragraphs):
+        if "fredag" in para.text.lower():
+            food = doc.paragraphs[idx+1].text
+
+    if food:
+        print(food)
+    else:
+        print("Oops something went wrong")
+
 def main():
     parse_vecka()
     parse_teknikparken()
@@ -148,6 +176,7 @@ def main():
     parse_hemlingby()
     parse_gs()
     parse_gustafsbro()
+    parse_sodersKalla()
     
 if __name__ == '__main__':
     main()
