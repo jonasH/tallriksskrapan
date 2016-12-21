@@ -2,3 +2,4 @@ requests
 lxml
 urllib3
 pdfminer3k
+python-docx

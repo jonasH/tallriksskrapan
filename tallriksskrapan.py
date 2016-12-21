@@ -11,7 +11,7 @@ from pdfminer.layout import LAParams, LTTextBox, LTTextLine
 from docx import Document
 
 week_number = 0
-lastWeek = "52" if week_number == "1" else str(int(week_number) - 1) 
+lastWeek = 0
 
 def parse_vecka():
     answer = requests.get('http://www.vecka.nu')
@@ -19,6 +19,7 @@ def parse_vecka():
     for child in root.xpath('//time'):
         global week_number
         week_number = child.text
+        lastWeek = "52" if week_number == "1" else str(int(week_number) - 1) 
     print('Det är nu vecka %s' % week_number)
 
 def parse_kompassen():
@@ -149,7 +150,7 @@ def parse_sodersKalla():
         if child.text and ("lunchmeny v" + week_number) in child.text.lower():
             url = child.get('href')
             break
-        #Check if menu has been updated from the week before, special case for first week of january
+        #Check if menu has been updated from the week before
         elif child.text and ("lunchmeny v" + lastWeek) in child.text.lower():
              print("Menyn har ännu inte blivit uppdaterad")
 
@@ -159,7 +160,7 @@ def parse_sodersKalla():
     doc = Document(memory_file)
 
     food = ""
-    #Parse document and look for fredag, food is in the next index
+    #Parse document and look for fredag, food is in the index after fredag
     for idx, para in enumerate(doc.paragraphs):
         if "fredag" in para.text.lower():
             food = doc.paragraphs[idx+1].text
@@ -169,6 +170,34 @@ def parse_sodersKalla():
     else:
         print("Oops something went wrong")
 
+def parse_koket():
+    print("### Köket ###")
+
+    answer = requests.get('http://koketlunch.se/meny.html')
+    root = html.fromstring(answer.text)
+    friday_found = False
+    ret = ""
+
+    for line in root.xpath('//p/span'):
+       #Get friday from table
+        if line.text and "fredag" in line.text.lower():
+                friday_found = True
+
+        if friday_found:
+            if line.text.strip():
+                #Fix encodings and remove '-' in the beginning of the different foods
+                if "fredag" in line.text.lower():
+                    ret += line.text.encode('raw_unicode_escape').decode('utf-8') + "\n"
+                else:
+                    ret += line.text.encode('raw_unicode_escape').decode('utf-8')[1:] + "\n"
+            else:
+                break
+    if ret:
+        print(ret)
+    else:
+        print("Oops something went wrong")
+
+
 def main():
     parse_vecka()
     parse_teknikparken()
@@ -177,6 +206,7 @@ def main():
     parse_gs()
     parse_gustafsbro()
     parse_sodersKalla()
+    parse_koket()
     
 if __name__ == '__main__':
     main()
