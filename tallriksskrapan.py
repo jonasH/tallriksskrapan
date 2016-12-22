@@ -11,7 +11,7 @@ from pdfminer.layout import LAParams, LTTextBox, LTTextLine
 from docx import Document
 
 week_number = 0
-lastWeek = 0
+lastWeek = "0"
 
 def parse_vecka():
     answer = requests.get('http://www.vecka.nu')
@@ -107,7 +107,7 @@ def getFoodFromPDFArray(pdfArray):
             elif correctWeek and "fredag" in line[0].lower():
 
                 #If the line is bigger than 1 it contains the food after 'fredag'
-                if line:
+                if len(line) > 1:
                     for x in range(1, len(line)):
                         ret += line[x] + "\n"
                 #The line only contained 'fredag' so the food is in the line after 'fredag'
