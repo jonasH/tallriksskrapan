@@ -2,6 +2,7 @@
 import requests
 import urllib.request
 import io
+from helpers import utf8text
 
 from lxml import html
 from pdfminer.pdfparser import PDFParser, PDFDocument
@@ -12,6 +13,7 @@ from docx import Document
 
 week_number = 0
 lastWeek = "0"
+
 
 def parse_vecka():
     answer = requests.get('http://www.vecka.nu')
@@ -94,6 +96,7 @@ def parse_pdf(pdf_url):
                     ret[pageIdx].append((lt_obj.get_text().splitlines()))
     return ret
 
+
 def getFoodFromPDFArray(pdfArray):
     correctWeek = False
     ret = ""
@@ -119,6 +122,7 @@ def getFoodFromPDFArray(pdfArray):
 
     return "Oops something went wrong"
 
+
 def parse_gustafsbro():
     print("### Gustafsbro ###")
     answer = requests.get('http://www.gavlelunch.se/gustafsbro.asp')
@@ -138,6 +142,7 @@ def parse_gustafsbro():
                print(food.text)
     else:
            print("Oops something went wrong")
+
 
 def parse_sodersKalla():
     print("### Söders källa ###")
@@ -170,6 +175,7 @@ def parse_sodersKalla():
     else:
         print("Oops something went wrong")
 
+
 def parse_koket():
     print("### Köket ###")
 
@@ -186,10 +192,14 @@ def parse_koket():
         if friday_found:
             if line.text.strip():
                 #Fix encodings and remove '-' in the beginning of the different foods
-                if "fredag" in line.text.lower():
-                    ret += line.text.encode('raw_unicode_escape').decode('utf-8') + "\n"
+                #Removed "fredag" printout to look more like the other printouts //Robert
+                if "fredag" in utf8text(line.text).lower():
+                    pass
+                    #ret += utf8text(line.text) + "\n"
+                elif "stängt" in utf8text(line.text).lower():
+                    ret += utf8text(line.text) + "\n"
                 else:
-                    ret += line.text.encode('raw_unicode_escape').decode('utf-8')[1:] + "\n"
+                    ret += utf8text(line.text)[1:] + "\n"
             else:
                 break
     if ret:
