@@ -53,7 +53,7 @@ def parse_gs():
     root = html.fromstring(answer.text)
 
     for child in root.xpath('//div[@class="left_holder"]/p')[1:3]:
-        print(child.text_content())
+        print(child.text_content() + "\n")
 
 
 def parse_hemlingby():
@@ -168,7 +168,7 @@ def parse_sodersKalla():
     #Parse document and look for fredag, food is in the index after fredag
     for idx, para in enumerate(doc.paragraphs):
         if "fredag" in para.text.lower():
-            food = doc.paragraphs[idx+1].text
+            food = doc.paragraphs[idx+1].text + "\n"
 
     if food:
         print(food)
@@ -207,6 +207,23 @@ def parse_koket():
     else:
         print("Oops something went wrong")
 
+def parse_kryddan():
+    print("### Kryddan ###")
+    answer = requests.get('http://www.kryddan35.se/hem/')
+    root = html.fromstring(answer.text)
+    friday_found = False
+    ret = ""
+    for child in root.xpath('//div[@id="veckans"]'):
+        lines = child.text_content().split("\n")
+        for line in lines:
+            if friday_found and child.text:
+                ret += line + "\n"
+            elif line and "fredag" in line.lower():
+                friday_found = True
+    if ret:
+        print(ret)
+    else:
+        print("Oops something went wrong")
 
 def main():
     parse_vecka()
@@ -217,6 +234,7 @@ def main():
     parse_gustafsbro()
     parse_sodersKalla()
     parse_koket()
+    parse_kryddan()
     
 if __name__ == '__main__':
     main()
