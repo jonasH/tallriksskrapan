@@ -2,6 +2,7 @@
 import requests
 import urllib.request
 import io
+import json
 from helpers import utf8text
 
 from lxml import html
@@ -22,42 +23,43 @@ def parse_vecka():
         global week_number
         week_number = child.text
         lastWeek = "52" if week_number == "1" else str(int(week_number) - 1) 
-    print('Det är nu vecka %s' % week_number)
+    return 'Det är nu vecka %s' % week_number
 
 def parse_kompassen():
-    print("### KOMPASSEN ###")
+    ret = "### KOMPASSEN ###" + "\n"
     answer = requests.get('http://www.restaurangkompassen.se/index.php?option=com_content&view=article&id=64&Itemid=66')
     root = html.fromstring(answer.text)
     friday_found = False
     for child in root.xpath('//div[@class="screen"]/div/div/div'):
         if friday_found and child.text:
-            print(child.text)
+            ret += child.text
         elif child.text and "fredag" in child.text.lower():
             friday_found = True
-
+    return ret
 
 def parse_teknikparken():
-    print("### TEKNIKPARKEN ###")
+    ret = "### TEKNIKPARKEN ###" + "\n"
     answer = requests.get('http://www.restaurangteknikparken.se/index.php?option=com_content&view=article&id=46')
     root = html.fromstring(answer.text)
     friday_found = False
     for child in root.xpath('//div[@class="screen"]/div/div/div'):
         if friday_found and child.text:
-            print(child.text)
+            ret += child.text
         elif child.text and "fredag" in child.text.lower():
             friday_found = True
+    return ret
 
 def parse_gs():
-    print("### Gourmetservice ###")
+    ret = "### Gourmetservice ###" + "\n"
     answer = requests.get('http://www.geflegourmetservice.se/lunch.php')
     root = html.fromstring(answer.text)
 
     for child in root.xpath('//div[@class="left_holder"]/p')[1:3]:
-        print(child.text_content() + "\n")
-
+        ret += child.text_content()
+    return ret
 
 def parse_hemlingby():
-    print("### HEMLINGBY ###")
+    ret = "### HEMLINGBY ###" + "\n"
     answer = requests.get('http://www.gavle.se/Uppleva--gora/Idrott-motion-och-friluftsliv/Friluftsliv-och-motion/Hemlingby-friluftsomrade/Hemlingbystugan/Fika-och-ata/')
     root = html.fromstring(answer.text)
     for child in root.xpath('//a'):
@@ -65,8 +67,8 @@ def parse_hemlingby():
             hemlingby_link='http://www.gavle.se' + child.get('href')
             break
     textAsArray = parse_pdf(hemlingby_link)
-    fridaysFood = getFoodFromPDFArray(textAsArray)
-    print(fridaysFood)
+    ret += getFoodFromPDFArray(textAsArray)
+    return ret
     
 #Takes url to pdf file and returns text split on newline into array
 def parse_pdf(pdf_url):
@@ -124,7 +126,7 @@ def getFoodFromPDFArray(pdfArray):
 
 
 def parse_gustafsbro():
-    print("### Gustafsbro ###")
+    ret = "### Gustafsbro ###" + "\n"
     answer = requests.get('http://www.gavlelunch.se/gustafsbro.asp')
     root = html.fromstring(answer.text)
     friday_found = False
@@ -139,13 +141,14 @@ def parse_gustafsbro():
     #If friday is found print food
     if friday_found:
            for food in weekdayTable.xpath('tr[2]/td[1]/font/ul/li'):
-               print(food.text)
+               ret += food.text.strip() + "\n"
     else:
-           print("Oops something went wrong")
+           ret += "Oops something went wrong"
+    return ret
 
 
 def parse_sodersKalla():
-    print("### Söders källa ###")
+    ret = "### Söders källa ###" + "\n"
     url = ""
     answer = requests.get('http://www.soderskalla.se/restaurangen/')
     root = html.fromstring(answer.text)
@@ -157,7 +160,7 @@ def parse_sodersKalla():
             break
         #Check if menu has been updated from the week before
         elif child.text and ("lunchmeny v" + lastWeek) in child.text.lower():
-             print("Menyn har ännu inte blivit uppdaterad")
+             ret += "Menyn har ännu inte blivit uppdaterad"
 
     #Fetch document
     answer = requests.get(url)
@@ -171,18 +174,18 @@ def parse_sodersKalla():
             food = doc.paragraphs[idx+1].text + "\n"
 
     if food:
-        print(food)
+        ret += food
     else:
-        print("Oops something went wrong")
-
+        ret += "Oops something went wrong"
+    return ret
 
 def parse_koket():
-    print("### Köket ###")
+    ret = "### Köket ###" + "\n"
 
     answer = requests.get('http://koketlunch.se/meny.html')
     root = html.fromstring(answer.text)
     friday_found = False
-    ret = ""
+    food = ""
 
     for line in root.xpath('//p/span'):
        #Get friday from table
@@ -197,44 +200,61 @@ def parse_koket():
                     pass
                     #ret += utf8text(line.text) + "\n"
                 elif "stängt" in utf8text(line.text).lower():
-                    ret += utf8text(line.text) + "\n"
+                    food += utf8text(line.text) + "\n"
                 else:
-                    ret += utf8text(line.text)[1:] + "\n"
+                    food += utf8text(line.text)[1:] + "\n"
             else:
                 break
-    if ret:
-        print(ret)
+    if food:
+        ret += food
     else:
-        print("Oops something went wrong")
+        ret += "Oops something went wrong"
+    return ret
 
 def parse_kryddan():
-    print("### Kryddan ###")
+    ret = "### Kryddan ###" + "\n"
     answer = requests.get('http://www.kryddan35.se/hem/')
     root = html.fromstring(answer.text)
     friday_found = False
-    ret = ""
+    food = ""
     for child in root.xpath('//div[@id="veckans"]'):
         lines = child.text_content().split("\n")
         for line in lines:
             if friday_found and child.text:
-                ret += line + "\n"
+                food += line + "\n"
             elif line and "fredag" in line.lower():
                 friday_found = True
-    if ret:
-        print(ret)
+    if food:
+        ret += food
     else:
-        print("Oops something went wrong")
+        ret += "Oops something went wrong"
+    return ret
+
+def get_json_encode():
+    
+    vecka = parse_vecka()
+    teknikparken = parse_teknikparken()
+    kompassen= parse_kompassen()
+    hemlingby = parse_hemlingby()
+    gs = parse_gs()
+    gustafsbro= parse_gustafsbro()
+    sodersKalla = parse_sodersKalla()
+    koket = parse_koket()
+    kryddan = parse_kryddan()
+    
+    return json.dumps({'vecka':week_number, 'teknikparken':teknikparken, 'kompassen':kompassen, 'hemlingby':hemlingby, 'gs':gs, 'gustafsbro':gustafsbro, 'sodersKalla':sodersKalla, 'koket':koket, 'kryddan':kryddan})
 
 def main():
     parse_vecka()
-    parse_teknikparken()
-    parse_kompassen()
-    parse_hemlingby()
-    parse_gs()
-    parse_gustafsbro()
-    parse_sodersKalla()
-    parse_koket()
-    parse_kryddan()
+    print("\n" +
+    parse_teknikparken() + "\n" +
+    parse_kompassen() + "\n" +
+    parse_hemlingby() + "\n" +
+    parse_gs()+ "\n" +
+    parse_gustafsbro() + "\n" +
+    parse_sodersKalla() + "\n" +
+    parse_koket() + "\n" +
+    parse_kryddan())
     
 if __name__ == '__main__':
     main()
